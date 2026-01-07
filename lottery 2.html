@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>主辦人選拔大賽</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 頂部導航 */
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .nav-btn {
+            background: #333;
+            color: #888;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .nav-btn.active {
+            background: #f39c12;
+            color: white;
+            border-color: #f39c12;
+            font-weight: bold;
+        }
+
+        /* 遊戲區域 */
+        .game-stage { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center;}
+        .game-stage.active { display: flex; }
+
+        h2 { font-size: 1.5rem; color: #f39c12; margin-bottom: 10px; }
+        p { color: #ccc; margin-bottom: 30px; }
+
+        /* 階段一：戰鬥力樣式 */
+        #score-display {
+            font-size: 6rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #2ecc71;
+            text-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+            margin: 20px 0;
+        }
+
+        /* 階段二：讀秒樣式 */
+        #timer-display {
+            font-size: 5rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+            border: 4px solid #444;
+            padding: 10px 20px;
+            border-radius: 10px;
+            background: black;
+            width: 280px;
+        }
+
+        /* 通用按鈕 */
+        .action-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        
+        .btn-green { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+        .btn-red { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+        .btn-blue { background: linear-gradient(145deg, #3498db, #2980b9); }
+
+        .result-box {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            min-height: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="switchStage(1)">第一關：天選之人</button>
+        <button class="nav-btn" onclick="switchStage(2)">第二關：生死時速</button>
+    </div>
+
+    <div id="stage1" class="game-stage active">
+        <h2>⚡ 戰鬥力檢測 ⚡</h2>
+        <p>點擊按鈕生成數值<br>數值 <b>最小</b> 的三位晉級</p>
+        
+        <div id="score-display">00</div>
+        <div class="result-box" id="s1-msg">準備開始...</div>
+
+        <button class="action-btn btn-green" onclick="generateScore()" id="s1-btn">啟動</button>
+    </div>
+
+    <div id="stage2" class="game-stage">
+        <h2>⏱️ 極限讀秒 ⏱️</h2>
+        <p>目標：停在 <b>10.00</b> 秒<br>誤差最小者獲勝(當選)</p>
+        
+        <div id="timer-display">00:00</div>
+        <div class="result-box" id="s2-msg">點擊開始</div>
+
+        <button class="action-btn btn-blue" onmousedown="handleTimer()" ontouchstart="handleTimer()" id="s2-btn">開始</button>
+    </div>
+
+    <script>
+        // --- 頁面切換邏輯 ---
+        function switchStage(stageNum) {
+            document.querySelectorAll('.game-stage').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`stage${stageNum}`).classList.add('active');
+            document.querySelectorAll('.nav-btn')[stageNum-1].classList.add('active');
+        }
+
+        // --- 第一階段邏輯 (亂數) ---
+        function generateScore() {
+            const display = document.getElementById('score-display');
+            const btn = document.getElementById('s1-btn');
+            const msg = document.getElementById('s1-msg');
+            
+            if(btn.disabled) return;
+            btn.disabled = true;
+            
+            let count = 0;
+            const maxCount = 20;
+            
+            // 亂數跳動動畫
+            const interval = setInterval(() => {
+                const num = Math.floor(Math.random() * 100) + 1;
+                display.innerText = num < 10 ? '0' + num : num;
+                count++;
+                
+                if (count > maxCount) {
+                    clearInterval(interval);
+                    // 最終數值 (加權一點讓結果更分散，包含小數點)
+                    const finalScore = (Math.random() * 99 + 1).toFixed(0); 
+                    display.innerText = finalScore < 10 ? '0' + finalScore : finalScore;
+                    display.style.color = "#f1c40f";
+                    msg.innerText = "請亮出你的分數！";
+                    btn.innerText = "重置";
+                    btn.disabled = false;
+                    btn.onclick = resetStage1;
+                    btn.classList.remove('btn-green');
+                    btn.classList.add('btn-red');
+                }
+            }, 50);
+        }
+
+        function resetStage1() {
+            document.getElementById('score-display').innerText = "00";
+            document.getElementById('score-display').style.color = "#2ecc71";
+            const btn = document.getElementById('s1-btn');
+            btn.innerText = "啟動";
+            btn.onclick = generateScore;
+            btn.classList.add('btn-green');
+            btn.classList.remove('btn-red');
+            document.getElementById('s1-msg').innerText = "準備開始...";
+        }
+
+        // --- 第二階段邏輯 (讀秒) ---
+        let startTime;
+        let timerInterval;
+        let isRunning = false;
+
+        function handleTimer(e) {
+            // 防止手機上觸發兩次
+            if(e && e.cancelable) e.preventDefault();
+
+            const display = document.getElementById('timer-display');
+            const btn = document.getElementById('s2-btn');
+            const msg = document.getElementById('s2-msg');
+
+            if (!isRunning) {
+                // 開始計時
+                isRunning = true;
+                startTime = Date.now();
+                btn.innerText = "停止";
+                btn.classList.remove('btn-blue');
+                btn.classList.add('btn-red');
+                msg.innerText = "屏住呼吸...";
+                
+                timerInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const seconds = (elapsed / 1000).toFixed(2);
+                    display.innerText = seconds.padStart(5, '0');
+                }, 10); // 10毫秒更新一次
+
+            } else {
+                // 停止計時
+                clearInterval(timerInterval);
+                isRunning = false;
+                const elapsed = Date.now() - startTime;
+                const seconds = (elapsed / 1000).toFixed(2);
+                display.innerText = seconds.padStart(5, '0');
+                
+                // 計算差距
+                const diff = Math.abs(10 - seconds).toFixed(2);
+                msg.innerHTML = `誤差：<b style="color:#f39c12">${diff}秒</b>`;
+                
+                btn.innerText = "重來";
+                btn.classList.remove('btn-red');
+                btn.classList.add('btn-blue');
+                
+                // 為了防止誤觸立刻重來，稍微延遲一下才能按重來
+                btn.onclick = null;
+                setTimeout(() => {
+                    btn.onclick = resetStage2;
+                }, 1000);
+            }
+        }
+
+        function resetStage2() {
+            document.getElementById('timer-display').innerText = "00:00";
+            document.getElementById('s2-msg').innerText = "點擊開始";
+            const btn = document.getElementById('s2-btn');
+            btn.innerText = "開始";
+            btn.onclick = handleTimer; // 綁定回原事件
+        }
+    </script>
+</body>
+</html>

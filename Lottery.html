@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>同學會主辦人抽籤</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f2f2f7;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            justify-content: space-between;
+        }
+        h1 { color: #333; margin-bottom: 10px; font-size: 1.5rem; }
+        
+        /* 顯示結果的大區塊 */
+        #display-area {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #007aff;
+            margin: 20px 0;
+            transition: all 0.2s;
+        }
+
+        /* 按鈕樣式 */
+        .btn {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 15px 0;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background-color: #e5e5ea; color: #333; }
+        .btn-danger { background-color: #ff3b30; }
+
+        /* 名單設定區域 */
+        #settings-area {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: left;
+            display: none; /* 預設隱藏 */
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        input {
+            flex: 1; padding: 10px;
+            border: 1px solid #ccc; border-radius: 8px; font-size: 1rem;
+        }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li {
+            padding: 10px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .delete-btn { color: red; cursor: pointer; padding: 5px; font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <div>
+        <h1>🎲 下屆主辦人是誰？</h1>
+        <div id="display-area">準備抽籤</div>
+    </div>
+
+    <div id="settings-area">
+        <div class="input-group">
+            <input type="text" id="new-name" placeholder="輸入同學名字">
+            <button class="btn" style="width: 80px;" onclick="addName()">新增</button>
+        </div>
+        <ul id="name-list"></ul>
+    </div>
+
+    <div>
+        <button class="btn" id="draw-btn" onclick="startDraw()">開始抽籤</button>
+        <button class="btn btn-secondary" onclick="toggleSettings()">⚙️ 編輯/查看名單</button>
+    </div>
+
+    <script>
+        // 預設名單
+        let names = ["同學A", "同學B", "同學C", "同學D", "同學E"];
+        
+        // 從手機儲存空間讀取舊名單 (如果有)
+        if (localStorage.getItem('classmateNames')) {
+            names = JSON.parse(localStorage.getItem('classmateNames'));
+        }
+
+        const display = document.getElementById("display-area");
+        const settingsArea = document.getElementById("settings-area");
+        const nameList = document.getElementById("name-list");
+        const drawBtn = document.getElementById("draw-btn");
+        let isDrawing = false;
+
+        function saveNames() {
+            localStorage.setItem('classmateNames', JSON.stringify(names));
+            renderList();
+        }
+
+        function renderList() {
+            nameList.innerHTML = "";
+            names.forEach((name, index) => {
+                let li = document.createElement("li");
+                li.innerHTML = `${name} <span class="delete-btn" onclick="removeName(${index})">✕</span>`;
+                nameList.appendChild(li);
+            });
+        }
+
+        function addName() {
+            const input = document.getElementById("new-name");
+            const val = input.value.trim();
+            if (val) {
+                names.push(val);
+                saveNames();
+                input.value = "";
+            }
+        }
+
+        function removeName(index) {
+            names.splice(index, 1);
+            saveNames();
+        }
+
+        function toggleSettings() {
+            if (settingsArea.style.display === "block") {
+                settingsArea.style.display = "none";
+            } else {
+                settingsArea.style.display = "block";
+                renderList();
+            }
+        }
+
+        function startDraw() {
+            if (names.length === 0) {
+                alert("名單是空的！請先新增同學。");
+                return;
+            }
+            if (isDrawing) return;
+            
+            isDrawing = true;
+            drawBtn.disabled = true;
+            settingsArea.style.display = "none"; // 抽籤時關閉設定
+            
+            let count = 0;
+            let speed = 50;
+            const maxCount = 30; // 跳動次數
+
+            const interval = setInterval(() => {
+                const random = Math.floor(Math.random() * names.length);
+                display.innerText = names[random];
+                display.style.color = "#ccc"; // 跳動時顏色變淡
+                count++;
+
+                if (count > maxCount) {
+                    clearInterval(interval);
+                    const winnerIndex = Math.floor(Math.random() * names.length);
+                    display.innerText = names[winnerIndex];
+                    display.style.color = "#ff3b30"; // 中獎顏色
+                    display.style.transform = "scale(1.2)";
+                    setTimeout(() => display.style.transform = "scale(1)", 200);
+                    
+                    isDrawing = false;
+                    drawBtn.disabled = false;
+                    drawBtn.innerText = "再抽一次";
+                }
+            }, speed);
+        }
+
+        // 初始化
+        renderList();
+    </script>
+</body>
+</html>
